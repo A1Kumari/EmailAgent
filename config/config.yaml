@@ -1,0 +1,79 @@
+# ============================================
+# Email Automation Agent Configuration
+# ============================================
+
+# -------------------------------------------
+# Processing Settings
+# -------------------------------------------
+processing:
+  mode: "unread"              # Which emails to process: "unread" only
+  max_emails_per_run: 10      # Safety limit: don't process more than this
+  mailbox: "INBOX"            # Which Gmail folder to check
+
+# -------------------------------------------
+# Gemini AI Settings
+# -------------------------------------------
+gemini:
+  model: "gemini-2.5-flash"
+  temperature: 0.3            # Low temperature = more consistent/focused
+  max_tokens: 1024            # Max response length
+
+# -------------------------------------------
+# Safety Settings
+# -------------------------------------------
+safety:
+  dry_run: true               # true = log only, don't actually do anything
+  confidence_threshold: 0.85  # Below this = needs human review
+  max_sends_per_hour: 20      # Rate limit for outgoing emails
+
+# -------------------------------------------
+# Logging Settings
+# -------------------------------------------
+logging:
+  console_level: "INFO"       # What to show in terminal
+  file_level: "DEBUG"         # What to save in log files
+  log_dir: "logs"             # Where to save log files
+
+# -------------------------------------------
+# Automation Rules
+# (Processed in order — first match wins)
+# -------------------------------------------
+rules:
+  - name: "Spam Detection"
+    conditions:
+      intent: "spam"
+    action: "ignore"
+    auto_send: false
+
+  - name: "Newsletter Auto-Archive"
+    conditions:
+      intent: "newsletter"
+      confidence_min: 0.80
+    action: "archive"
+    auto_send: false
+
+  - name: "Urgent Issues — Flag and Draft"
+    conditions:
+      intent: "urgent_issue"
+      priority: "high"
+    action: "flag_and_draft"
+    auto_send: false           # NEVER auto-send urgent responses
+
+  - name: "Meeting Requests — Draft Reply"
+    conditions:
+      intent: "meeting_request"
+    action: "draft_reply"
+    auto_send: false
+
+  - name: "Complaints — Flag for Review"
+    conditions:
+      intent: "complaint"
+    action: "flag"
+    auto_send: false
+
+  - name: "General Inquiry — Draft Reply"
+    conditions:
+      intent: "general_inquiry"
+      confidence_min: 0.85
+    action: "draft_reply"
+    auto_send: false

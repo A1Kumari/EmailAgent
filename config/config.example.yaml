@@ -1,0 +1,29 @@
+# Copy this to config.yaml and fill in your values
+# This file is safe to commit (no secrets)
+
+processing:
+  mode: "unread"
+  max_emails_per_run: 10
+  mailbox: "INBOX"
+
+gemini:
+  model: "gemini-2.5-flash"
+  temperature: 0.3
+  max_tokens: 1024
+
+safety:
+  dry_run: true
+  confidence_threshold: 0.85
+  max_sends_per_hour: 20
+
+logging:
+  console_level: "INFO"
+  file_level: "DEBUG"
+  log_dir: "logs"
+
+rules:
+  - name: "Example Rule"
+    conditions:
+      intent: "spam"
+    action: "ignore"
+    auto_send: false
