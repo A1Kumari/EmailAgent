@@ -1,4 +1,4 @@
-# 📬 Email Automation Agent
+#  Email Automation Agent
 
 AI-powered Gmail automation agent that classifies emails and takes actions automatically using **Google Gemini 2.5 Flash**.
 
@@ -9,7 +9,7 @@ It safely processes unread emails, applies rule-based logic, and performs contro
 https://github.com/user-attachments/assets/f13a4555-a32a-457a-982b-6198d4c3b204
 
 
-## 🚀 Features
+##  Features
 
 -  AI Email Classification (intent, priority, confidence)
 -  Entity Extraction (dates, names, action items)
@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/f13a4555-a32a-457a-982b-6198d4c3b204
 
 ---
 
-## 🏗 Architecture Overview
+## Architecture Overview
 
 ```
 Email Received
@@ -45,7 +45,7 @@ Each module is independently testable.
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 email-agent/
@@ -74,7 +74,7 @@ email-agent/
 
 ---
 
-# ⚡ Quick Start
+#  Quick Start
 
 ## 1️⃣ Prerequisites
 
@@ -172,7 +172,7 @@ rules:
 
 ---
 
-# 🛡 Safety Configuration
+#  Safety Configuration
 
 ```yaml
 safety:
@@ -205,7 +205,7 @@ python src/main.py --config config/custom.yaml
 
 ---
 
-# 🧪 Testing
+#  Testing
 
 Run unit tests:
 
@@ -215,7 +215,7 @@ python -m pytest tests/ -v
 
 
 
-# 🧠 Design Principles
+#  Design Principles
 
 - Safe by default (`dry_run=true`)
 - First-match-wins rule engine
