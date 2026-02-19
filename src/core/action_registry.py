@@ -2,16 +2,16 @@ from abc import ABC, abstractmethod
 import logging
 from typing import Optional, Tuple
 
-from src.gmail_client import GmailClient
-from src.gemini_agent import GeminiAgent
-from src.models import (
+from src.clients.gmail_client import GmailClient
+from src.clients.gemini_agent import GeminiAgent
+from src.core.models import (
     EmailData,
     ClassificationResult,
     MatchedRule,
     SafetyDecision,
     ProcessingResult,
 )
-import src.display as display
+import src.utils.display as display
 
 logger = logging.getLogger(__name__)
 

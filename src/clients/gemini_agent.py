@@ -17,8 +17,8 @@ from typing import Optional
 
 import google.generativeai as genai
 
-from src.models import EmailData, ClassificationResult
-from src.config_manager import GeminiConfig
+from src.core.models import EmailData, ClassificationResult
+from src.utils.config_manager import GeminiConfig
 
 
 logger = logging.getLogger(__name__)

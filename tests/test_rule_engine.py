@@ -6,9 +6,9 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
-from src.rule_engine import RuleEngine
-from src.config_manager import RuleConfig
-from src.models import EmailData, ClassificationResult
+from src.core.rule_engine import RuleEngine
+from src.utils.config_manager import RuleConfig
+from src.core.models import EmailData, ClassificationResult
 
 
 class TestRuleEngine(unittest.TestCase):

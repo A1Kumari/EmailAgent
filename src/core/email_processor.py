@@ -1,9 +1,9 @@
 import logging
 from typing import Optional
 
-from src.models import EmailData, ProcessingResult, MatchedRule, SafetyDecision
-from src.action_registry import ActionFactory
-import src.display as display
+from src.core.models import EmailData, ProcessingResult, MatchedRule, SafetyDecision
+from src.core.action_registry import ActionFactory
+import src.utils.display as display
 
 logger = logging.getLogger(__name__)
 

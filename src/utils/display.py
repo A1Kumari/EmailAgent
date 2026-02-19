@@ -12,7 +12,7 @@ Designed to make it immediately obvious:
 from datetime import datetime
 from typing import Optional
 
-from src.models import (
+from src.core.models import (
     EmailData,
     ClassificationResult,
     MatchedRule,
@@ -25,8 +25,10 @@ from src.models import (
 # COLORS
 # ──────────────────────────────────────────────
 
+
 class C:
     """ANSI color codes."""
+
     RESET = "\033[0m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
@@ -51,22 +53,37 @@ def col(text: str, color: str) -> str:
 # STARTUP
 # ──────────────────────────────────────────────
 
+
 def show_startup_banner(config):
     """Show startup banner with clear mode indication."""
     is_live = not config.safety.dry_run
 
     print()
     print(col("+" + "=" * 58 + "+", C.CYAN))
-    print(col("|", C.CYAN) + col("         EMAIL AUTOMATION AGENT v1.0                   ", C.BOLD) + col("|", C.CYAN))
+    print(
+        col("|", C.CYAN)
+        + col("         EMAIL AUTOMATION AGENT v1.0                   ", C.BOLD)
+        + col("|", C.CYAN)
+    )
     print(col("+" + "=" * 58 + "+", C.CYAN))
     print()
 
     # MODE — make it very obvious
     if is_live:
-        print(col("  !! WARNING: LIVE MODE — AGENT WILL SEND REAL EMAILS !!", C.BG_RED + C.WHITE + C.BOLD))
+        print(
+            col(
+                "  !! WARNING: LIVE MODE — AGENT WILL SEND REAL EMAILS !!",
+                C.BG_RED + C.WHITE + C.BOLD,
+            )
+        )
         print()
     else:
-        print(col("  [SAFE] DRY RUN MODE — No emails will actually be sent", C.BG_BLUE + C.WHITE))
+        print(
+            col(
+                "  [SAFE] DRY RUN MODE — No emails will actually be sent",
+                C.BG_BLUE + C.WHITE,
+            )
+        )
         print()
 
     print(f"  Account:      {col(config.gmail.email, C.CYAN)}")
@@ -101,6 +118,7 @@ def show_connection_status(gmail_ok: bool, gemini_ok: bool):
 # ──────────────────────────────────────────────
 # PROCESSING EACH EMAIL
 # ──────────────────────────────────────────────
+
 
 def show_email_divider(index: int, total: int):
     """Big clear divider between emails."""
@@ -172,17 +190,23 @@ def show_ai_analysis(classification: ClassificationResult):
         conf_display = col(f"{conf:.0%}", C.RED + C.BOLD)
 
     print(col("  AI ANALYSIS:", C.BOLD + C.WHITE))
-    print(f"    Intent:     {col(classification.intent.upper().replace('_', ' '), intent_color + C.BOLD)}")
-    print(f"    Priority:   {priority_display.get(classification.priority, classification.priority)}")
+    print(
+        f"    Intent:     {col(classification.intent.upper().replace('_', ' '), intent_color + C.BOLD)}"
+    )
+    print(
+        f"    Priority:   {priority_display.get(classification.priority, classification.priority)}"
+    )
     print(f"    Confidence: {conf_display}")
 
     # Entities
     entities = classification.entities
-    has_entities = any([
-        entities.get("dates"),
-        entities.get("names"),
-        entities.get("action_items"),
-    ])
+    has_entities = any(
+        [
+            entities.get("dates"),
+            entities.get("names"),
+            entities.get("action_items"),
+        ]
+    )
     if has_entities:
         print(f"    Extracted:")
         if entities.get("dates"):
@@ -190,7 +214,9 @@ def show_ai_analysis(classification: ClassificationResult):
         if entities.get("names"):
             print(f"      Names:   {', '.join(str(n) for n in entities['names'])}")
         if entities.get("action_items"):
-            print(f"      Actions: {', '.join(str(a) for a in entities['action_items'])}")
+            print(
+                f"      Actions: {', '.join(str(a) for a in entities['action_items'])}"
+            )
 
     # Reasoning — compact
     if classification.reasoning:
@@ -201,7 +227,9 @@ def show_ai_analysis(classification: ClassificationResult):
     print()
 
 
-def show_decision(matched_rule: Optional[MatchedRule], safety: Optional[SafetyDecision], dry_run: bool):
+def show_decision(
+    matched_rule: Optional[MatchedRule], safety: Optional[SafetyDecision], dry_run: bool
+):
     """Show what decision was made and why."""
 
     print(col("  DECISION:", C.BOLD + C.WHITE))
@@ -247,7 +275,7 @@ def show_reply_being_sent(
     Show the reply prominently — this is what the agent is sending.
     This is the MOST IMPORTANT display in the whole app.
     """
-    from src.gmail_client import GmailClient
+    from src.clients.gmail_client import GmailClient
 
     to_addr = GmailClient.extract_email_address(original_email.from_address)
     reply_subject = GmailClient.make_reply_subject(original_email.subject)
@@ -364,13 +392,16 @@ def show_email_count(count: int):
     if count == 0:
         print(col("  No unread emails found. Inbox is clean!", C.GREEN))
     else:
-        print(f"  Found {col(str(count), C.WHITE + C.BOLD)} unread email(s) to process.")
+        print(
+            f"  Found {col(str(count), C.WHITE + C.BOLD)} unread email(s) to process."
+        )
     print()
 
 
 # ──────────────────────────────────────────────
 # FINAL SUMMARY
 # ──────────────────────────────────────────────
+
 
 def show_run_summary(results: list, dry_run: bool):
     """Show comprehensive run summary."""
@@ -389,11 +420,19 @@ def show_run_summary(results: list, dry_run: bool):
             intent = result.classification.intent
             classifications[intent] = classifications.get(intent, 0) + 1
 
-    mode = col("LIVE MODE", C.RED + C.BOLD) if not dry_run else col("DRY RUN", C.YELLOW + C.BOLD)
+    mode = (
+        col("LIVE MODE", C.RED + C.BOLD)
+        if not dry_run
+        else col("DRY RUN", C.YELLOW + C.BOLD)
+    )
 
     print()
     print(col("+" + "=" * 58 + "+", C.CYAN))
-    print(col("|", C.CYAN) + col("                    RUN SUMMARY                         ", C.BOLD) + col("|", C.CYAN))
+    print(
+        col("|", C.CYAN)
+        + col("                    RUN SUMMARY                         ", C.BOLD)
+        + col("|", C.CYAN)
+    )
     print(col("+" + "=" * 58 + "+", C.CYAN))
     print()
     print(f"  Mode:       {mode}")

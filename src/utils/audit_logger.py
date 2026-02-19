@@ -15,8 +15,8 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from src.models import ProcessingResult
-from src.config_manager import LoggingConfig
+from src.core.models import ProcessingResult, MatchedRule, ClassificationResult
+from src.utils.config_manager import LoggingConfig
 
 
 logger = logging.getLogger(__name__)
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 class AuditLogger:
     """
     Logs all email processing results to structured JSON files.
-    
+
     Each run creates entries in a daily log file.
     Format: logs/audit_YYYY-MM-DD.json (one JSON object per line)
-    
+
     Usage:
         audit = AuditLogger(config.logging)
         audit.log_result(processing_result)
@@ -49,16 +49,17 @@ class AuditLogger:
     def _setup_file_logging(self, config: LoggingConfig):
         """Setup Python logging to write to file."""
         log_file = os.path.join(
-            self.log_dir,
-            f"agent_{datetime.now().strftime('%Y-%m-%d')}.log"
+            self.log_dir, f"agent_{datetime.now().strftime('%Y-%m-%d')}.log"
         )
 
         # File handler for detailed logs
         file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(getattr(logging, config.file_level.upper(), logging.DEBUG))
-        file_handler.setFormatter(logging.Formatter(
-            "%(asctime)s | %(levelname)-5s | %(name)s | %(message)s"
-        ))
+        file_handler.setLevel(
+            getattr(logging, config.file_level.upper(), logging.DEBUG)
+        )
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s | %(levelname)-5s | %(name)s | %(message)s")
+        )
 
         # Add to root logger
         root_logger = logging.getLogger()
@@ -76,8 +77,7 @@ class AuditLogger:
         Appends one JSON line to the daily audit file.
         """
         audit_file = os.path.join(
-            self.log_dir,
-            f"audit_{datetime.now().strftime('%Y-%m-%d')}.jsonl"
+            self.log_dir, f"audit_{datetime.now().strftime('%Y-%m-%d')}.jsonl"
         )
 
         record = self._build_audit_record(result)
@@ -147,8 +147,7 @@ class AuditLogger:
     def log_summary(self, results: list, dry_run: bool):
         """Log a summary of the entire run."""
         audit_file = os.path.join(
-            self.log_dir,
-            f"audit_{datetime.now().strftime('%Y-%m-%d')}.jsonl"
+            self.log_dir, f"audit_{datetime.now().strftime('%Y-%m-%d')}.jsonl"
         )
 
         # Count actions
@@ -176,6 +175,5 @@ class AuditLogger:
             logger.error(f"Failed to write summary log: {e}")
 
         logger.info(
-            f"Run summary: {len(results)} processed, "
-            f"{errors} errors, dry_run={dry_run}"
+            f"Run summary: {len(results)} processed, {errors} errors, dry_run={dry_run}"
         )

@@ -2,7 +2,6 @@ import sys
 import os
 import argparse
 import logging
-from datetime import datetime
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,14 +10,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
 
-from src.config_manager import ConfigManager
-from src.gmail_client import GmailClient
-from src.gemini_agent import GeminiAgent
-from src.rule_engine import RuleEngine
-from src.safety import SafetyModule
-from src.audit_logger import AuditLogger
-from src.email_processor import EmailProcessor
-import src.display as display
+from src.utils.config_manager import ConfigManager
+from src.clients.gmail_client import GmailClient
+from src.clients.gemini_agent import GeminiAgent
+from src.core.rule_engine import RuleEngine
+from src.core.safety import SafetyModule
+from src.utils.audit_logger import AuditLogger
+from src.core.email_processor import EmailProcessor
+import src.utils.display as display
 
 
 class EmailAgent:

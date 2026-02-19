@@ -12,8 +12,8 @@ First matching rule wins.
 import logging
 from typing import Optional
 
-from src.models import EmailData, ClassificationResult, MatchedRule
-from src.config_manager import RuleConfig
+from src.core.models import EmailData, ClassificationResult, MatchedRule
+from src.utils.config_manager import RuleConfig
 
 
 logger = logging.getLogger(__name__)
@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 class RuleEngine:
     """
     Evaluates classification results against configured rules.
-    
+
     Rules are processed in ORDER (first match wins).
     All conditions within a rule must match (AND logic).
-    
+
     Usage:
         engine = RuleEngine(config.rules)
         matched = engine.match(email_data, classification)
@@ -48,11 +48,11 @@ class RuleEngine:
     ) -> Optional[MatchedRule]:
         """
         Find the first rule that matches the given classification.
-        
+
         Args:
             email_data: The original email (for sender/subject matching)
             classification: AI classification result
-            
+
         Returns:
             MatchedRule if a rule matches, None otherwise
         """
@@ -84,12 +84,12 @@ class RuleEngine:
         """
         Evaluate whether a single rule matches.
         ALL conditions must be true (AND logic).
-        
+
         Args:
             rule: The rule to evaluate
             email_data: Original email
             classification: AI classification
-            
+
         Returns:
             Tuple of (is_match: bool, matched_conditions: dict)
         """
@@ -153,17 +153,19 @@ class RuleEngine:
         """
         Get a summary of all configured rules.
         Useful for display/logging at startup.
-        
+
         Returns:
             List of dicts with rule summaries
         """
         summary = []
         for i, rule in enumerate(self.rules, 1):
-            summary.append({
-                "order": i,
-                "name": rule.name,
-                "conditions": rule.conditions,
-                "action": rule.action,
-                "auto_send": rule.auto_send,
-            })
+            summary.append(
+                {
+                    "order": i,
+                    "name": rule.name,
+                    "conditions": rule.conditions,
+                    "action": rule.action,
+                    "auto_send": rule.auto_send,
+                }
+            )
         return summary

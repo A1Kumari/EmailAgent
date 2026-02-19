@@ -17,8 +17,8 @@ from email.utils import parseaddr
 from typing import Optional
 import logging
 
-from src.models import EmailData
-from src.config_manager import GmailConfig
+from src.core.models import EmailData
+from src.utils.config_manager import GmailConfig
 
 
 logger = logging.getLogger(__name__)

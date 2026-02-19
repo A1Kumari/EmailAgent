@@ -17,8 +17,8 @@ import logging
 from collections import deque
 from typing import Optional
 
-from src.models import ClassificationResult, MatchedRule, SafetyDecision
-from src.config_manager import SafetyConfig
+from src.core.models import ClassificationResult, MatchedRule, SafetyDecision
+from src.utils.config_manager import SafetyConfig
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class SafetyModule:
     """
     Evaluates whether an action is safe to execute.
-    
+
     Usage:
         safety = SafetyModule(config.safety)
         decision = safety.evaluate(classification, matched_rule)
@@ -68,11 +68,11 @@ class SafetyModule:
     ) -> SafetyDecision:
         """
         Run all safety checks and return a decision.
-        
+
         Args:
             classification: AI classification result
             matched_rule: The rule that matched (if any)
-            
+
         Returns:
             SafetyDecision with can_execute, can_auto_send, and reasons
         """
@@ -154,10 +154,10 @@ class SafetyModule:
     def _check_confidence(self, confidence: float) -> bool:
         """
         Check if confidence meets the threshold.
-        
+
         Args:
             confidence: AI confidence score (0.0 to 1.0)
-            
+
         Returns:
             True if confidence is high enough
         """
@@ -166,7 +166,7 @@ class SafetyModule:
     def _check_rate_limit(self) -> bool:
         """
         Check if we're within the rate limit.
-        
+
         Returns:
             True if we haven't exceeded the hourly limit
         """
@@ -185,8 +185,7 @@ class SafetyModule:
         self._send_timestamps.append(time.time())
         sends = len(self._send_timestamps)
         logger.debug(
-            f"Send recorded. "
-            f"Total this hour: {sends}/{self.config.max_sends_per_hour}"
+            f"Send recorded. Total this hour: {sends}/{self.config.max_sends_per_hour}"
         )
 
     def _clean_old_timestamps(self):
