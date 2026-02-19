@@ -2,7 +2,6 @@ import sys
 import os
 import argparse
 import logging
-from datetime import datetime
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -263,26 +262,23 @@ class EmailAgent:
                 display.show_action_result("error", dry_run)
                 return "error", None
 
-            # Determine if we should send
+            # Prepare reply details
+            to_address = GmailClient.extract_email_address(email_data.from_address)
+            reply_subject = GmailClient.make_reply_subject(email_data.subject)
+
+            # Decide: auto-send or save as draft
             should_send = safety_decision.can_auto_send and not dry_run
-            is_just_draft = (
-                action in ("draft_reply", "flag_and_draft")
-                and not matched_rule.auto_send
-            )
 
             # Show the reply
             display.show_reply_being_sent(
                 original_email=email_data,
                 reply_text=reply_text,
-                is_sending=should_send and not is_just_draft,
+                is_sending=should_send,
                 dry_run=dry_run,
             )
 
-            # Actually send if allowed
-            if should_send and not is_just_draft:
-                to_address = GmailClient.extract_email_address(email_data.from_address)
-                reply_subject = GmailClient.make_reply_subject(email_data.subject)
-
+            if should_send:
+                # AUTO-SEND the reply
                 success = self.gmail.send_reply(
                     to_address=to_address,
                     subject=reply_subject,
@@ -299,12 +295,27 @@ class EmailAgent:
                     display.show_send_result(False, to_address)
                     action_taken = "error"
 
-            elif action == "flag_and_draft":
-                display.show_action_result("flagged_and_drafted", dry_run)
-                action_taken = "flagged_and_drafted"
             else:
-                display.show_action_result("draft_saved", dry_run)
-                action_taken = "draft_saved"
+                # SAVE AS DRAFT in Gmail (not just console)
+                if not dry_run:
+                    draft_saved = self.gmail.save_draft(
+                        to_address=to_address,
+                        subject=reply_subject,
+                        body=reply_text,
+                        in_reply_to=email_data.message_id,
+                        references=email_data.references,
+                    )
+                    if draft_saved:
+                        self.logger.info("Draft saved to Gmail Drafts folder")
+                    else:
+                        self.logger.warning("Could not save draft to Gmail")
+
+                if action == "flag_and_draft":
+                    display.show_action_result("flagged_and_drafted", dry_run)
+                    action_taken = "flagged_and_drafted"
+                else:
+                    display.show_action_result("draft_saved", dry_run)
+                    action_taken = "draft_saved"
 
             return action_taken, reply_text
 

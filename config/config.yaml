@@ -2,42 +2,26 @@
 # Email Automation Agent Configuration
 # ============================================
 
-# -------------------------------------------
-# Processing Settings
-# -------------------------------------------
 processing:
-  mode: "unread"              # Which emails to process: "unread" only
-  max_emails_per_run: 10      # Safety limit: don't process more than this
-  mailbox: "INBOX"            # Which Gmail folder to check
+  mode: "unread"
+  max_emails_per_run: 10
+  mailbox: "INBOX"
 
-# -------------------------------------------
-# Gemini AI Settings
-# -------------------------------------------
 gemini:
   model: "gemini-2.5-flash"
-  temperature: 0.3            # Low temperature = more consistent/focused
-  max_tokens: 1024            # Max response length
+  temperature: 0.3
+  max_tokens: 1024
 
-# -------------------------------------------
-# Safety Settings
-# -------------------------------------------
 safety:
-  dry_run: true               # true = log only, don't actually do anything
-  confidence_threshold: 0.85  # Below this = needs human review
-  max_sends_per_hour: 20      # Rate limit for outgoing emails
+  dry_run: true
+  confidence_threshold: 0.85
+  max_sends_per_hour: 20
 
-# -------------------------------------------
-# Logging Settings
-# -------------------------------------------
 logging:
-  console_level: "INFO"       # What to show in terminal
-  file_level: "DEBUG"         # What to save in log files
-  log_dir: "logs"             # Where to save log files
+  console_level: "INFO"
+  file_level: "DEBUG"
+  log_dir: "logs"
 
-# -------------------------------------------
-# Automation Rules
-# (Processed in order — first match wins)
-# -------------------------------------------
 rules:
   - name: "Spam Detection"
     conditions:
@@ -52,28 +36,47 @@ rules:
     action: "archive"
     auto_send: false
 
-  - name: "Urgent Issues — Flag and Draft"
+  - name: "Urgent Issues - Flag and Draft"
     conditions:
       intent: "urgent_issue"
       priority: "high"
     action: "flag_and_draft"
-    auto_send: false           # NEVER auto-send urgent responses
-
-  - name: "Meeting Requests — Draft Reply"
-    conditions:
-      intent: "meeting_request"
-    action: "draft_reply"
     auto_send: false
 
-  - name: "Complaints — Flag for Review"
+  - name: "Meeting Requests - Auto Reply"
+    conditions:
+      intent: "meeting_request"
+    action: "reply"
+    auto_send: true
+
+  - name: "Complaints - Flag for Review"
     conditions:
       intent: "complaint"
     action: "flag"
     auto_send: false
 
-  - name: "General Inquiry — Draft Reply"
+  - name: "General Inquiry - Auto Reply"
     conditions:
       intent: "general_inquiry"
       confidence_min: 0.85
-    action: "draft_reply"
-    auto_send: false
+    action: "reply"
+    auto_send: true
+
+templates:
+  meeting_acknowledge: |
+    Hi {sender_name},
+    Thank you for the meeting request. I've noted the proposed time of {dates}.
+    I'll review my calendar and confirm shortly.
+    Best regards
+
+  urgent_acknowledge: |
+    Hi {sender_name},
+    Thank you for flagging this urgent issue. We are treating this as top priority.
+    We will provide an update within the next hour.
+    Best regards
+
+  inquiry_acknowledge: |
+    Hi {sender_name},
+    Thank you for reaching out with your questions.
+    I'll get back to you with detailed answers shortly.
+    Best regards

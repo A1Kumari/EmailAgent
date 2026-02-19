@@ -311,6 +311,80 @@ class GmailClient:
             logger.error(f"Unexpected error sending email: {e}")
             return False
 
+    def save_draft(
+        self,
+        to_address: str,
+        subject: str,
+        body: str,
+        in_reply_to: Optional[str] = None,
+        references: Optional[str] = None,
+    ) -> bool:
+        """
+        Save an email as a draft in Gmail's Drafts folder.
+        Uses IMAP APPEND to add the message to [Gmail]/Drafts.
+
+        Args:
+            to_address: Recipient email
+            subject: Email subject
+            body: Email body text
+            in_reply_to: Message-ID for threading
+            references: References header for threading
+
+        Returns:
+            True if draft saved successfully
+        """
+        imap_connection = None
+        try:
+            # Build the email message
+            msg = MIMEMultipart()
+            msg["From"] = self.email_address
+            msg["To"] = to_address
+            msg["Subject"] = subject
+
+            if in_reply_to:
+                msg["In-Reply-To"] = in_reply_to
+                if references:
+                    msg["References"] = f"{references} {in_reply_to}"
+                else:
+                    msg["References"] = in_reply_to
+
+            msg.attach(MIMEText(body, "plain"))
+
+            # Connect and save to Drafts
+            imap_connection = self._connect_imap()
+
+            # Gmail's draft folder
+            draft_folder = "[Gmail]/Drafts"
+
+            # APPEND the message to drafts
+            import time as _time
+
+            date_time = imaplib.Time2Internaldate(_time.time())
+
+            result = imap_connection.append(
+                draft_folder,
+                "",  # No flags
+                date_time,
+                msg.as_bytes(),
+            )
+
+            if result[0] == "OK":
+                logger.info("Draft saved to Gmail Drafts folder")
+                return True
+            else:
+                logger.warning(f"Failed to save draft: {result}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error saving draft: {e}")
+            return False
+        finally:
+            if imap_connection:
+                try:
+                    imap_connection.logout()
+                except Exception:
+                    pass
+
     # ──────────────────────────────────────────────
     # ARCHIVE EMAILS (IMAP)
     # ──────────────────────────────────────────────
