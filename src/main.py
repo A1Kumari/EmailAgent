@@ -2,6 +2,7 @@ import sys
 import os
 import argparse
 import logging
+from datetime import datetime
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,7 +17,7 @@ from src.gemini_agent import GeminiAgent
 from src.rule_engine import RuleEngine
 from src.safety import SafetyModule
 from src.audit_logger import AuditLogger
-from src.models import ProcessingResult
+from src.email_processor import EmailProcessor
 import src.display as display
 
 
@@ -41,6 +42,11 @@ class EmailAgent:
         self.rules = RuleEngine(self.config.rules)
         self.safety = SafetyModule(self.config.safety)
         self.audit = AuditLogger(self.config.logging)
+
+        # ── Step 4: Initialize Service Layer ──
+        self.processor = EmailProcessor(
+            self.config, self.gmail, self.gemini, self.rules, self.safety
+        )
 
         self.logger = logging.getLogger(__name__)
 
@@ -116,7 +122,8 @@ class EmailAgent:
         # ── Process Each Email ──
         results = []
         for i, email_data in enumerate(emails, 1):
-            result = self._process_single_email(email_data, i, len(emails))
+            # Delegate to the Service Layer
+            result = self.processor.process_single_email(email_data, i, len(emails))
             results.append(result)
 
             # Log to audit trail
@@ -125,204 +132,6 @@ class EmailAgent:
         # ── Show Summary ──
         display.show_run_summary(results, self.config.safety.dry_run)
         self.audit.log_summary(results, self.config.safety.dry_run)
-
-    # ──────────────────────────────────────────────
-    # PROCESS SINGLE EMAIL
-    # ──────────────────────────────────────────────
-
-    def _process_single_email(
-        self,
-        email_data,
-        index: int,
-        total: int,
-    ) -> ProcessingResult:
-        """Process a single email through the full pipeline."""
-
-        display.show_email_divider(index, total)
-        display.show_incoming_email(email_data)
-
-        # Fetch thread context if this is a reply
-        if email_data.in_reply_to:
-            self.logger.info("Fetching thread context...")
-            email_data.thread_messages = self.gmail.fetch_thread_context(
-                email_data.in_reply_to
-            )
-            if email_data.thread_messages:
-                self.logger.info(
-                    f"Found {len(email_data.thread_messages)} previous message(s) in thread"
-                )
-
-        try:
-            # Step 1: CLASSIFY
-            self.logger.info(f"Classifying email from {email_data.from_address}...")
-            classification = self.gemini.classify_email(email_data)
-            display.show_ai_analysis(classification)
-
-            # Step 2: MATCH RULES
-            matched_rule = self.rules.match(email_data, classification)
-
-            # Step 3: SAFETY CHECK
-            safety_decision = None
-            if matched_rule:
-                safety_decision = self.safety.evaluate(classification, matched_rule)
-
-            display.show_decision(
-                matched_rule, safety_decision, self.config.safety.dry_run
-            )
-
-            if not matched_rule:
-                display.show_action_result("skipped", self.config.safety.dry_run)
-                return ProcessingResult(
-                    email=email_data,
-                    classification=classification,
-                    action_taken="skipped",
-                )
-
-            # Step 4: EXECUTE
-            action_taken, reply_text = self._execute_action(
-                email_data, classification, matched_rule, safety_decision
-            )
-
-            return ProcessingResult(
-                email=email_data,
-                classification=classification,
-                matched_rule=matched_rule,
-                safety_decision=safety_decision,
-                action_taken=action_taken,
-                reply_generated=reply_text,
-                success=True,
-            )
-
-        except Exception as e:
-            self.logger.error(f"Error processing email: {e}")
-            display.show_processing_error(email_data, str(e))
-            return ProcessingResult(
-                email=email_data,
-                action_taken="error",
-                success=False,
-                error_message=str(e),
-            )
-
-    def _execute_action(
-        self,
-        email_data,
-        classification,
-        matched_rule,
-        safety_decision,
-    ) -> tuple:
-        """Execute the appropriate action."""
-
-        action = matched_rule.action
-        reply_text = None
-        dry_run = self.config.safety.dry_run
-
-        # ── IGNORE ──
-        if action == "ignore":
-            display.show_action_result("ignored", dry_run)
-            return "ignored", None
-
-        # ── FLAG ONLY ──
-        if action == "flag":
-            if safety_decision.can_execute:
-                display.show_action_result("flagged", dry_run)
-                return "flagged", None
-            else:
-                display.show_action_result("skipped", dry_run)
-                return "skipped", None
-
-        # ── ARCHIVE ──
-        if action == "archive":
-            if safety_decision.can_execute and not dry_run:
-                success = self.gmail.archive_email(email_data.id)
-                action_taken = "archived" if success else "error"
-            elif safety_decision.can_execute:
-                action_taken = "archived"
-            else:
-                action_taken = "skipped"
-            display.show_action_result(action_taken, dry_run)
-            return action_taken, None
-
-        # ── REPLY / DRAFT_REPLY / FLAG_AND_DRAFT ──
-        if action in ("reply", "draft_reply", "flag_and_draft"):
-            # Generate the reply
-            self.logger.info("Generating reply...")
-
-            # When generating reply, check for template
-            template_name = matched_rule.template
-            template_text = None
-            if template_name and template_name in self.config.templates:
-                template_text = self.config.templates[template_name]
-
-            reply_text = self.gemini.generate_reply(
-                email_data, classification, template=template_text
-            )
-
-            if not reply_text:
-                self.logger.warning("Failed to generate reply")
-                display.show_action_result("error", dry_run)
-                return "error", None
-
-            # Prepare reply details
-            to_address = GmailClient.extract_email_address(email_data.from_address)
-            reply_subject = GmailClient.make_reply_subject(email_data.subject)
-
-            # Decide: auto-send or save as draft
-            should_send = safety_decision.can_auto_send and not dry_run
-
-            # Show the reply
-            display.show_reply_being_sent(
-                original_email=email_data,
-                reply_text=reply_text,
-                is_sending=should_send,
-                dry_run=dry_run,
-            )
-
-            if should_send:
-                # AUTO-SEND the reply
-                success = self.gmail.send_reply(
-                    to_address=to_address,
-                    subject=reply_subject,
-                    body=reply_text,
-                    in_reply_to=email_data.message_id,
-                    references=email_data.references,
-                )
-
-                if success:
-                    self.safety.record_send()
-                    display.show_send_result(True, to_address)
-                    action_taken = "reply_sent"
-                else:
-                    display.show_send_result(False, to_address)
-                    action_taken = "error"
-
-            else:
-                # SAVE AS DRAFT in Gmail (not just console)
-                if not dry_run:
-                    draft_saved = self.gmail.save_draft(
-                        to_address=to_address,
-                        subject=reply_subject,
-                        body=reply_text,
-                        in_reply_to=email_data.message_id,
-                        references=email_data.references,
-                    )
-                    if draft_saved:
-                        self.logger.info("Draft saved to Gmail Drafts folder")
-                    else:
-                        self.logger.warning("Could not save draft to Gmail")
-
-                if action == "flag_and_draft":
-                    display.show_action_result("flagged_and_drafted", dry_run)
-                    action_taken = "flagged_and_drafted"
-                else:
-                    display.show_action_result("draft_saved", dry_run)
-                    action_taken = "draft_saved"
-
-            return action_taken, reply_text
-
-        # ── UNKNOWN ──
-        self.logger.warning(f"Unknown action: {action}")
-        display.show_action_result("skipped", dry_run)
-        return "skipped", reply_text
 
 
 # ──────────────────────────────────────────────
