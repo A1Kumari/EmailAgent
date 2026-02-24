@@ -1,0 +1,68 @@
+
+# ═══════════════════════════════════════════════════════
+# .dockerignore — Files to exclude from Docker build
+# Keeps the image small and avoids leaking secrets
+# ═══════════════════════════════════════════════════════
+
+# ── Secrets (NEVER include in image) ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Git ──
+.git
+.gitignore
+
+# ── Python artifacts ──
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist/
+build/
+*.egg
+.eggs/
+
+# ── Virtual environments ──
+venv/
+.venv/
+env/
+
+# ── IDE / Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Logs (mounted as volume, not baked in) ──
+logs/
+*.log
+
+# ── Data files ──
+data/
+*.db
+*.sqlite
+
+# ── Documentation ──
+docs/
+*.md
+LICENSE
+
+# ── Tests ──
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Docker files (don't include recursively) ──
+docker-compose*.yml
+Dockerfile*
+
+# ── Config (mounted as volume) ──
+config/config.yaml

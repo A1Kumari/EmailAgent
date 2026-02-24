@@ -1,0 +1,92 @@
+# ═══════════════════════════════════════════════════════
+# docker-compose.yml — Email Agent
+#
+# R5: Container orchestration with:
+#   - Environment variable configuration via .env file (AC7)
+#   - Volume mounts for config and logs (AC4, AC5)
+#   - Graceful shutdown support (AC8)
+#   - Easy build and run commands (AC3)
+#
+# Usage:
+#   Build:   docker compose build
+#   Run:     docker compose up
+#   Stop:    docker compose down
+#   Logs:    docker compose logs -f email-agent
+#   Shell:   docker compose exec email-agent /bin/bash
+# ═══════════════════════════════════════════════════════
+
+version: "3.8"
+
+services:
+  email-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: email-agent
+    restart: unless-stopped
+
+    # ── R5 (AC7): Environment variables from .env file ──
+    env_file:
+      - .env
+
+    # Additional environment variables (override .env if needed)
+    environment:
+      # Core secrets (from .env — listed here for documentation)
+      - GMAIL_EMAIL=${GMAIL_EMAIL}
+      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+
+      # Optional overrides
+      - DRY_RUN=${DRY_RUN:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # R7: Feature flag overrides (optional)
+      - FEATURE_JSON_MODE=${FEATURE_JSON_MODE:-true}
+      - FEATURE_FUNCTION_CALLING=${FEATURE_FUNCTION_CALLING:-true}
+      - FEATURE_COST_TRACKING=${FEATURE_COST_TRACKING:-true}
+      - FEATURE_THREAD_DEPTH=${FEATURE_THREAD_DEPTH:-5}
+
+      # R9: Container identification for logging
+      - CONTAINER_ID=email-agent
+      - DEPLOYMENT_ENV=${DEPLOYMENT_ENV:-docker}
+
+    # ── R5 (AC4, AC5): Volume mounts ──
+    volumes:
+      # Config directory — change config without rebuilding (AC4)
+      - ./config:/app/config:ro
+
+      # Logs directory — persist logs outside container (AC5)
+      - ./logs:/app/logs
+
+    # ── R5 (AC8): Graceful shutdown ──
+    # Give the agent time to finish processing current email
+    stop_grace_period: 30s
+
+    # Signal to send for shutdown (SIGTERM for graceful)
+    stop_signal: SIGTERM
+
+    # Resource limits (prevent runaway API calls)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "email-agent"
+
+    # Network (isolated)
+    networks:
+      - agent-network
+
+networks:
+  agent-network:
+    driver: bridge
